@@ -5,6 +5,7 @@ go 1.25.2
 require (
 	github.com/tmc/mlx-go v0.0.0
 	github.com/tmc/mlx-go-lm v0.0.0
+	golang.org/x/tools v0.43.0
 )
 
 require (
