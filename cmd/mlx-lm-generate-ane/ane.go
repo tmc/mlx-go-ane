@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/tmc/mlx-go-lm/mlxlm/aneenv"
+	"github.com/tmc/mlx-go-ane/aneenv"
 	"github.com/tmc/mlx-go-lm/mlxlm/models"
 	"github.com/tmc/mlx-go-lm/mlxlm/runtime/anedecode"
 	"github.com/tmc/mlx-go/mlx"
