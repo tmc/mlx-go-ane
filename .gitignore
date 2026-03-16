@@ -1,0 +1,11 @@
+# Build artifacts
+*.test
+debug-noprefill
+mlx-ane-generate
+mlx-ane-repro-directblock
+mlx-ane-serve
+mlx-lm-generate-ane
+
+# Tool caches
+.claude/
+.gocache/
