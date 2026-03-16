@@ -1,10 +1,8 @@
 # Build artifacts
 *.test
-debug-noprefill
 mlx-ane-generate
-mlx-ane-repro-directblock
-mlx-ane-serve
-mlx-lm-generate-ane
+mlx-ane-train
+bench-note
 
 # Tool caches
 .claude/
