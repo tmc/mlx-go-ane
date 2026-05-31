@@ -18,21 +18,18 @@ import (
 	"time"
 
 	"github.com/tmc/mlx-go-lm/mlxlm"
-	"github.com/tmc/mlx-go-lm/mlxlm/models"
-	"github.com/tmc/mlx-go-lm/mlxlm/runtime/anedecode"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/runtime/decodeplane"
 	"github.com/tmc/mlx-go/mlx"
 	"github.com/tmc/mlx-go/mlx/random"
-	"github.com/tmc/mlx-go/mlxc"
 
-	"github.com/tmc/mlx-go-lm/mlxlm/decode"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/decode"
 )
 
 func main() {
 	loadANEEnv()
 
-	mlxc.SetPanicOnError(false)
-	models.UseFastRoPE = true
-	models.UseFastSDPA = true
+	mlx.SetPanicOnError(false)
 
 	if os.Getenv("MLXGO_FREE_QUEUE_THRESHOLD") == "" {
 		mlx.SetFreeQueueThreshold(0)
@@ -140,12 +137,12 @@ func run(modelDir, promptText string, maxTokensToGenerate int, temp, topPVal, mi
 	// Load model
 	loadingStart := time.Now()
 	pprof.Do(ctx, pprof.Labels("phase", "load_model"), func(ctx context.Context) {})
-	model, _, err := models.LoadModel(modelDir)
+	model, _, err := models.LoadModel(ctx, modelDir)
 	if err != nil {
 		return fmt.Errorf("failed to load model: %w", err)
 	}
 
-	weightFiles, err := models.DiscoverWeightFiles(modelDir)
+	weightFiles, err := models.DiscoverWeightFiles(ctx, modelDir)
 	if err != nil {
 		return fmt.Errorf("failed to discover weights: %w", err)
 	}
@@ -163,7 +160,7 @@ func run(modelDir, promptText string, maxTokensToGenerate int, temp, topPVal, mi
 		deviceInfo, err := mlx.Metal.DeviceInfo()
 		if err == nil {
 			maxRec := uint(deviceInfo.MaxRecommendedWorkingSetSize)
-			oldLimit, _ := mlx.SetWiredLimit(maxRec)
+			oldLimit := mlx.SetWiredLimit(maxRec)
 			defer mlx.SetWiredLimit(oldLimit)
 		}
 	}
@@ -225,9 +222,9 @@ func run(modelDir, promptText string, maxTokensToGenerate int, temp, topPVal, mi
 	}
 
 	// Create random state
-	key := random.MustKey(uint64(seedVal))
-	keyReshaped := mlx.MustReshape(key, []int{2}, nil)
-	keyFresh := mlx.MustCopy(keyReshaped, nil)
+	key := random.Key(uint64(seedVal))
+	keyReshaped := mlx.Reshape(key, 2)
+	keyFresh := mlx.Copy(keyReshaped)
 	randState := decode.NewRandomState(keyFresh)
 
 	modelConfig := model.Config()
@@ -239,22 +236,18 @@ func run(modelDir, promptText string, maxTokensToGenerate int, temp, topPVal, mi
 		if !quietMode {
 			slog.Info("Warming up model...")
 		}
-		warmupInput, _ := mlx.Zeros([]int{1, 1}, mlx.Int32, nil)
+		warmupInput := mlx.Zeros([]int{1, 1}, mlx.Int32)
 		warmupCache := createMultiLayerCache(modelConfig.NumLayers, cacheConfig)
-		warmupOut, _, err := model.Forward(warmupInput, warmupCache)
-		if err != nil {
-			slog.Warn("Warmup failed, continuing anyway", "error", err)
-		} else {
-			mlx.Eval(warmupOut)
-			mlx.Synchronize(nil)
-		}
+		warmupOut, _ := model.Forward(ctx, warmupInput, warmupCache)
+		mlx.Eval(warmupOut)
+		mlx.Synchronize()
 		warmupInput.Free()
 
-		if warmer, ok := model.(anedecode.ANEDecodePlaneWarmer); ok {
+		if warmer, ok := model.(decodeplane.DecodePlaneWarmer); ok {
 			if !quietMode {
 				slog.Info("Warming up ANE decode plane...")
 			}
-			if err := warmer.PrewarmANEDecodePlane(); err != nil {
+			if err := warmer.PrewarmDecodePlane(); err != nil {
 				slog.Warn("ANE decode plane warmup failed", "error", err)
 			}
 		}
@@ -282,8 +275,9 @@ func run(modelDir, promptText string, maxTokensToGenerate int, temp, topPVal, mi
 	defer currentTokensArr.Free()
 
 	// Forward pass
-	forwardPass := func(input *mlx.Array, c models.Cache) (*mlx.Array, models.Cache, error) {
-		return model.Forward(input, c)
+	forwardPass := func(ctx context.Context, input *mlx.Array, c models.Cache) (*mlx.Array, models.Cache, error) {
+		out, next := model.Forward(ctx, input, c)
+		return out, next, nil
 	}
 
 	genStart := time.Now()

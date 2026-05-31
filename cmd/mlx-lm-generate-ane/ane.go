@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/tmc/mlx-go-ane/aneenv"
-	"github.com/tmc/mlx-go-lm/mlxlm/models"
-	"github.com/tmc/mlx-go-lm/mlxlm/runtime/anedecode"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/runtime/decodeplane"
 	"github.com/tmc/mlx-go/mlx"
 )
 
@@ -25,9 +26,9 @@ func loadANEEnv() {
 func normalizeANEDecodePlaneMode(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "off", "none", "disabled":
-		return anedecode.ANEDecodePlaneOff, nil
-	case "qwen35", "qwen3.5", "qwen3_5":
-		return anedecode.ANEDecodePlaneQwen35, nil
+		return decodeplane.DecodePlaneOff, nil
+	case "auto", "qwen35", "qwen3.5", "qwen3_5":
+		return decodeplane.DecodePlaneAuto, nil
 	default:
 		return "", fmt.Errorf("unsupported ANE decode plane %q", raw)
 	}
@@ -43,10 +44,10 @@ func validateANEDecodePlaneFlags() error {
 }
 
 func wrapANEDecodePlane(model models.LanguageModel, modelPath string) models.LanguageModel {
-	if *aneDecodePlane == anedecode.ANEDecodePlaneOff {
+	if *aneDecodePlane == decodeplane.DecodePlaneOff {
 		return model
 	}
-	wrapped, err := anedecode.Wrap(model, anedecode.ANEDecodePlaneOptions{
+	wrapped, err := decodeplane.Wrap(context.Background(), model, decodeplane.DecodePlaneOptions{
 		Mode:      *aneDecodePlane,
 		ModelPath: modelPath,
 		CacheDir:  *aneDecodeCache,

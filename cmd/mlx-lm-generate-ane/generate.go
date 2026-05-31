@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/tmc/mlx-go-lm/mlxlm"
-	"github.com/tmc/mlx-go-lm/mlxlm/decode"
-	"github.com/tmc/mlx-go-lm/mlxlm/models"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/decode"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
 	"github.com/tmc/mlx-go/mlx"
 )
 
@@ -57,15 +57,14 @@ func Generate(
 		promptTokenCount := input.Size()
 
 		opts := decode.Options{
-			Temperature:     temperature,
-			TopP:            topP,
-			MinP:            minP,
-			TopK:            topK,
-			MaxTokens:       maxTokens,
-			EOSTokens:       eosTokens,
+			Temperature:      temperature,
+			TopP:             topP,
+			MinP:             minP,
+			TopK:             topK,
+			MaxTokens:        maxTokens,
+			EOSTokens:        eosTokens,
 			SamplingStrategy: "lazy",
-			EagerPrefill:    false,
-			UseStridedCache: false,
+			UseStridedCache:  false,
 		}
 
 		slog.Debug("Generate: creating TokenIterator", "strategy", "lazy")

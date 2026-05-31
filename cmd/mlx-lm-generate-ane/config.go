@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ func resolveModelPath(path string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to initialize cache: %w", err)
 		}
-		return cache.GetModelPath(path)
+		return cache.GetModelPath(context.Background(), path)
 	}
 	return "", fmt.Errorf("model path not found: %s", path)
 }

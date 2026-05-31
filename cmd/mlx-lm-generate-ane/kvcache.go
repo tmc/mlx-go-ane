@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/tmc/mlx-go-lm/mlxlm/kvcache"
-	"github.com/tmc/mlx-go-lm/mlxlm/models"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
 	"github.com/tmc/mlx-go/mlx"
 )
 
@@ -14,7 +14,7 @@ func buildCacheConfig() *kvcache.Config {
 
 	switch {
 	case *inplaceCache && mlx.HasKVCacheInplace():
-		config.Type = kvcache.TypeInplace
+		config.Type = kvcache.TypePrealloc
 		slog.Info("Using in-place KV cache via C++ FFI")
 	case *rotatingCache:
 		config.Type = kvcache.TypeRotating

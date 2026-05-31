@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"runtime"
 	"time"
 
-	"github.com/tmc/mlx-go-lm/mlxlm/models"
-	"github.com/tmc/mlx-go-lm/mlxlm/runtime/anedecode"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
+	"github.com/tmc/mlx-go-lm/mlxlm/llm/runtime/decodeplane"
 	"github.com/tmc/mlx-go/mlx"
 )
 
@@ -51,22 +49,14 @@ func printStatistics(
 	activeMemoryGB := 0.0
 	cacheMemoryGB := 0.0
 
-	if peakBytes, err := mlx.GetPeakMemory(); err == nil {
-		peakMemoryGB = float64(peakBytes) / (1024 * 1024 * 1024)
-	} else if *verbose {
-		fmt.Fprintf(os.Stderr, "Warning: failed to get peak GPU memory: %v\n", err)
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
-		peakMemoryGB = float64(m.Sys) / (1024 * 1024 * 1024)
-	}
+	peakBytes := mlx.GetPeakMemory()
+	peakMemoryGB = float64(peakBytes) / (1024 * 1024 * 1024)
 
 	if *memoryStats {
-		if activeBytes, err := mlx.GetActiveMemory(); err == nil {
-			activeMemoryGB = float64(activeBytes) / (1024 * 1024 * 1024)
-		}
-		if cacheBytes, err := mlx.GetCacheMemory(); err == nil {
-			cacheMemoryGB = float64(cacheBytes) / (1024 * 1024 * 1024)
-		}
+		activeBytes := mlx.GetActiveMemory()
+		activeMemoryGB = float64(activeBytes) / (1024 * 1024 * 1024)
+		cacheBytes := mlx.GetCacheMemory()
+		cacheMemoryGB = float64(cacheBytes) / (1024 * 1024 * 1024)
 	}
 
 	stats := computeGenerationStats(promptTokens, len(generatedTokens), prefillDuration, genDuration)
@@ -85,11 +75,11 @@ func printANEDecodePlaneStatistics(quietMode bool, model models.LanguageModel) {
 	if quietMode || model == nil {
 		return
 	}
-	reporter, ok := model.(anedecode.ANEDecodePlaneStatsReporter)
+	reporter, ok := model.(decodeplane.DecodePlaneStatsReporter)
 	if !ok {
 		return
 	}
-	st := reporter.ANEDecodePlaneStats()
+	st := reporter.DecodePlaneStats()
 	if !st.Enabled {
 		return
 	}
