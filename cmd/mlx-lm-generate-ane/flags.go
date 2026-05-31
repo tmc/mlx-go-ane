@@ -28,14 +28,14 @@ var (
 	quietShort        = flag.Bool("q", false, "If true only print the generated output (short form)")
 
 	// KV cache flags
-	inplaceCache     = flag.Bool("inplace-cache", false, "Use in-place KV cache via C++ FFI")
+	inplaceCache     = flag.Bool("inplace-cache", false, "Deprecated alias for -prealloc-cache")
 	rotatingCache    = flag.Bool("rotating-cache", false, "Use rotating KV cache (ring buffer with fixed max size)")
 	preallocCache    = flag.Bool("prealloc-cache", false, "Use pre-allocated KV cache")
 	maxKVSize        = flag.Int("max-kv-size", 0, "Maximum KV cache size for rotating cache")
 	keepTokens       = flag.Int("keep", 0, "Number of prefix tokens to preserve in rotating cache")
 	kvBits           = flag.Int("kv-bits", 0, "Number of bits for KV cache quantization (0 = no quantization)")
 	kvGroupSize      = flag.Int("kv-group-size", 64, "Group size for KV cache quantization")
-	quantizedKVStart = flag.Int("quantized-kv-start", 0, "Step to begin using quantized KV cache when kv-bits is set")
+	quantizedKVStart = flag.Int("quantized-kv-start", 0, "Compatibility flag; quantized KV starts immediately when kv-bits is set")
 	kvSize           = flag.Int("kv-size", 0, "Size of the KV cache (0 = model max)")
 
 	// Display/debug flags

@@ -5,7 +5,6 @@ import (
 
 	"github.com/tmc/mlx-go-lm/mlxlm/kvcache"
 	"github.com/tmc/mlx-go-lm/mlxlm/llm/models"
-	"github.com/tmc/mlx-go/mlx"
 )
 
 // buildCacheConfig creates a kvcache.Config based on CLI flags.
@@ -13,9 +12,9 @@ func buildCacheConfig() *kvcache.Config {
 	config := kvcache.DefaultConfig()
 
 	switch {
-	case *inplaceCache && mlx.HasKVCacheInplace():
+	case *inplaceCache:
 		config.Type = kvcache.TypePrealloc
-		slog.Info("Using in-place KV cache via C++ FFI")
+		slog.Info("Using pre-allocated KV cache; -inplace-cache is deprecated")
 	case *rotatingCache:
 		config.Type = kvcache.TypeRotating
 		if *maxKVSize > 0 {
@@ -33,6 +32,13 @@ func buildCacheConfig() *kvcache.Config {
 		slog.Info("Using pre-allocated KV cache")
 	default:
 		config.Type = kvcache.TypeDefault
+	}
+
+	if *kvBits > 0 {
+		config.Type = kvcache.TypeQuantized
+		config.KVBits = *kvBits
+		config.KVGroupSize = *kvGroupSize
+		slog.Info("Using quantized KV cache", "bits", *kvBits, "groupSize", *kvGroupSize)
 	}
 
 	if *kvSize > 0 {
